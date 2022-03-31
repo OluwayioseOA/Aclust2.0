@@ -14,11 +14,9 @@ For easy data manipulations, we also provided functions (beta2Mval & Mval2beta) 
 # Clustering only
 
 
-setwd() ##set working directory
-
 source("aclust2.0_utils.R")
 
-load("data/betasEPIC.RData")
+load("betasEPIC.RData")
 
 manifest <- get_manifest("EPIC")
 
@@ -29,21 +27,28 @@ cpg.clusters <- list.out$cpg.clusters ##Includes only the CpG clusters which can
 
 # Optional GEE model
 
+pheno <- read.csv("pheno_EPIC.csv") 
 
-pheno <- read.csv("data/pheno_EPIC.csv") 
 sample.id  <- pheno$sampleID
-exposure <- pheno$expo #(can also take categorical exposure variables)
+
+exposure <- pheno$expo 
+
 covariates<- pheno %>% dplyr::select(bmi, cotinine)
+
 identical(colnames(betas), sample.id) ##must be in the same order
 
-cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.list, exposure = exposure, covariates= covariates, id = colnames(betas), working.cor = "ex", sample.id = sample.id) %>% mutate(exposure_padjusted = p.adjust(exposure_pvalue, "BH")) ##adjusting for false positives
+cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.list, exposure = exposure, covariates= covariates, id = colnames(betas), working.cor = "ex", sample.id = sample.id) %>% mutate(exposure_padjusted = p.adjust(exposure_pvalue, "BH")) 
 
 annot.betas <- list.out$annot.betas
+
 clus <- list.out$cpg.clusters ## (from step 3)
+
 annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "hsa")
 
 annot.betas <- list.out$annot.betas
+
 clus <- cluster.gee ## (from step 4)
+
 annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "hsa") 
 
 
