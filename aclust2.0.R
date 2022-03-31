@@ -57,7 +57,7 @@ cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.lis
 # Step 5: Perform chromosomal annotations ---------------------------------
 #For cluster outputs from step 3 (no phentoypes/predictors)
 annot.betas <- list.out$annot.betas
-clus <- list.out$cpg.clusters ## (from step 4)
+clus <- list.out$cpg.clusters ## (from step 3)
 annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "hsa")
 #annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "mm")#mouse annotation
 
