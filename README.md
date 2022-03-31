@@ -15,10 +15,17 @@ For easy data manipulations, we also provided functions (beta2Mval & Mval2beta) 
 
 
 setwd() ##set working directory
+
 source("aclust2.0_utils.R")
+
 load("data/betasEPIC.RData")
+
 manifest <- get_manifest("EPIC")
-list.out <- find_cluster_list(probe.vec = rownames(betas), betas = betas, manifest = manifest, minimum.cluster.size = 2)
+
+list.out <- find_cluster_list(probe.vec = rownames(betas), betas = betas, manifest = 
+
+manifest, minimum.cluster.size = 2)
+
 clusters.list <- list.out$clusters.list #required for optional GEE model in step 4
 annot.betas <- list.out$annot.betas #required chromosomal annotation in step 5
 cpg.clusters <- list.out$cpg.clusters #Includes only the CpG clusters which can be passed directly as clus object for gene annotations (step 5)
