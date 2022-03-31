@@ -12,6 +12,8 @@ Step 5 (“function annot.clus.gene”). This function performs chromosomal and 
 For easy data manipulations, we also provided functions (beta2Mval & Mval2beta) to convert between beta and m-values, the latter being more statistically valid for modeling array data.
 
 #Clustering only
+
+
 setwd() ##set working directory
 source("aclust2.0_utils.R")
 load("data/betasEPIC.RData")
@@ -21,7 +23,10 @@ clusters.list <- list.out$clusters.list #required for optional GEE model in step
 annot.betas <- list.out$annot.betas #required chromosomal annotation in step 5
 cpg.clusters <- list.out$cpg.clusters #Includes only the CpG clusters which can be passed directly as clus object for gene annotations (step 5)
 
+
 #Optional GEE model
+
+
 pheno <- read.csv("data/pheno_EPIC.csv") 
 sample.id  <- pheno$sampleID
 exposure <- pheno$expo #(can also take categorical exposure variables)
