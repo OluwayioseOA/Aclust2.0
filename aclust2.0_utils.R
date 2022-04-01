@@ -279,9 +279,9 @@ acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = 
 find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size = 2, 
                                thresh.dist = 0.25, bp.thresh.dist = 999,
                                max.dist = 1000, type = "average", dist.type = "spearman") {
-  if(all(!is.na(betas))==F) {
-    stop("Error: There are NAs in betas data. Please remove before proceeding!")
-  }else{
+ # if(all(!is.na(betas))==F) {
+  #  stop("Error: There are NAs in betas data. Please remove before proceeding!")
+  #}else{
   annot.betas <- as.data.frame(manifest) %>% filter(rownames(.)%in%probe.vec) %>% 
     dplyr::select(Probe_ID, seqnames, probeTarget) %>%
     setNames(c("IlmnID", "CHR", "Coordinate")) %>% 
@@ -371,7 +371,7 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
     dplyr::mutate(cluster_name = paste0("cluster_", seq(1:nrow(.))))
   
   return(list(annot.betas = annot.betas, clusters.list = clusters.all, cpg.clusters = cpg.clusters))
-  }
+ # }
 }
 
 # GEE.clusters function ---------------------------------------------------
