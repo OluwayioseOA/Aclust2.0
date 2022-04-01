@@ -410,11 +410,12 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
   
   n.mod <- length(clusters.list)
   
-  effect <- rep(0, n.mod)
-  se <- rep(0, n.mod)
-  pvals <- rep(0, n.mod)
+  effect <- rep(NA, n.mod)
+  se <- rep(NA, n.mod)
+  pvals <- rep(NA, n.mod)
   sites <- rep("", n.mod)
-  n.sites <- rep(0, n.mod)
+  n.sites <- rep(NA, n.mod)
+  n.samp <- rep(NA, n.mod)
   
   if (!is.null(covariates)){
     
@@ -450,11 +451,12 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
         ind.comp <- which(complete.cases(cbind(clus.betas, exposure, covariates, id)))
         eval(parse(text = model.expr.1.site))
         
-        effect[i] <- summary(model)[[6]][2,1]
-        se[i] <- summary(model)[[6]][2,2]
-        pvals[i] <- summary(model)[[6]][2,4]
+        effect[i] <- summary(model)$coef["exposure",1]
+        se[i] <- summary(model)$coef["exposure",2]
+        pvals[i] <- summary(model)$coef["exposure",4]
         n.sites[i] <- 1
         sites[i] <- clus.probes
+        n.samp[i] <- length(ind.comp)
         
         
       } else{
@@ -473,10 +475,11 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
         eval(parse(text = model.expression))
         
         
-        effect[i] <- summary(model)[[6]][2,1]
-        se[i] <- summary(model)[[6]][2,2]
-        pvals[i] <- summary(model)[[6]][2,4]
+        effect[i] <- summary(model)$coef["exposure",1]
+        se[i] <- summary(model)$coef["exposure",2]
+        pvals[i] <- summary(model)$coef["exposure",4]
         n.sites[i] <- length(clus.probes)
+        n.samp[i] <- length(ind.comp)
         for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
         substr(sites[i], 1, 1) <- ""
         
@@ -502,11 +505,12 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
         ind.comp <- which(complete.cases(cbind(clus.betas, exposure, id)))
         eval(parse(text = model.expr.1.site))
         
-        effect[i] <- summary(model)[[6]][2,1]
-        se[i] <- summary(model)[[6]][2,2]
-        pvals[i] <- summary(model)[[6]][2,4]
+        effect[i] <- summary(model)$coef["exposure",1]
+        se[i] <- summary(model)$coef["exposure",2]
+        pvals[i] <- summary(model)$coef["exposure",4]
         n.sites[i] <- 1
         sites[i] <- clus.probes
+        n.samp[i] <- length(ind.comp)
         
       } else{
         
@@ -524,10 +528,11 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
         eval(parse(text = model.expression))
         
         
-        effect[i] <- summary(model)[[6]][2,1]
-        se[i] <- summary(model)[[6]][2,2]
-        pvals[i] <- summary(model)[[6]][2,4]
+        effect[i] <- summary(model)$coef["exposure",1]
+        se[i] <- summary(model)$coef["exposure",2]
+        pvals[i] <- summary(model)$coef["exposure",4]
         n.sites[i] <- length(clus.probes)
+        n.samp[i] <- length(ind.comp)
         for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
         substr(sites[i], 1, 1) <- ""
         
@@ -537,7 +542,7 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
     
   }
     }
-  result <- data.frame(exposure_effect_size = effect, exposure_effect_se = se, exposure_pvalue= pvals, n_sites_in_cluster = n.sites, cluster_sites =sites)  
+  result <- data.frame(exposure_effect_size = effect, exposure_effect_se = se, exposure_pvalue= pvals, n_sites_in_cluster = n.sites, n_samples = n.samp, cluster_sites =sites)  
   result <- result[order(result$exposure_pvalue),]
   
   
