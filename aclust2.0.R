@@ -28,6 +28,11 @@ manifest <- get_manifest("EPIC") #to pull EPIC manifest
 # Step 3: Clustering of CpGs ----------------------------------------------
 ##This step creates a list that accommodates three objects 
 list.out <- find_cluster_list(probe.vec = rownames(betas), betas = betas, manifest = manifest, minimum.cluster.size = 2)
+# list.out <- find_cluster_list(probe.vec = rownames(betasMM285), 
+#                                betas = betasMM285, 
+#                                manifest = manifest, 
+#                                minimum.cluster.size = 2)
+
 
 clusters.list <- list.out$clusters.list #required for optional GEE model in step 4
 annot.betas <- list.out$annot.betas #required chromosomal annotation in step 5
@@ -42,6 +47,10 @@ sample.id  <- pheno$sampleID
 exposure <- pheno$expo #(can also take categorical exposure variables)
 covariates<- pheno %>% dplyr::select(bmi, cotinine)
 identical(colnames(betas), sample.id) ##must be in the same order
+# identical(colnames(betasMM285), sample.id) # FALSE
+# all(is.element(sample.id, colnames(betasMM285))) # TRUE
+# betasMM285 <- betasMM285[,sample.id]
+# identical(colnames(betasMM285), sample.id) # TRUE
 #betas <- betas[, sample.id] ##to reorder betas by sample.id
 
 ###Adjusting for covariates
@@ -50,8 +59,13 @@ cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.lis
   mutate(exposure_padjusted = p.adjust(exposure_pvalue, "BH")) ##adjusting for false positives
 
 ###No covariate adjustment 
-# cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.list, exposure = exposure,
-#                                    covariates = NULL, id = colnames(betas), working.cor = "ex", sample.id = sample.id) %>%
+# cluster.gee <- GEE.clusters(betas = betasMM285, 
+#                                clusters.list = list.out$clusters.list, 
+#                                exposure = exposure,
+#                                covariates = NULL, 
+#                                id = colnames(betas), 
+#                                working.cor = "ex", 
+#                                sample.id = sample.id) %>%
 #   mutate(exposure_padjusted = p.adjust(exposure_pvalue, "BH")) ##adjusting for false positives
 
 # Step 5: Perform chromosomal annotations ---------------------------------

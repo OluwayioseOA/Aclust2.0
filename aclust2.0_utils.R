@@ -278,8 +278,19 @@ acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = 
 # Find_cluster_list function --------------------------------------------------------
 find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size = 2, 
                                thresh.dist = 0.25, bp.thresh.dist = 999,
-                               max.dist = 1000, type = "average", dist.type = "spearman") {
- # if(all(!is.na(betas))==F) {
+                               max.dist = 1000, type = "average", dist.type = "spearman", 
+                               missingness_max_prop = 0.2) {
+  message(paste("Checking missingness, allowing maximum missingness proportion", missingness_max_prop))
+  missingness_prop <- apply(betas, 1, function(x) mean(is.na(x)))
+  inds_rm_probes <- which(missingness_prop > missingness_max_prop)
+  if (length(inds_rm_probes) > 0){
+    message(paste("Removing", length(inds_rm_probes), 
+                  "methylation sites due to high missingness"))
+    betas <- betas[-inds_rm_probes,]
+    probe.vec <- probe.vec[-inds_rm_probes]
+  }
+  
+  # if(all(!is.na(betas))==F) {
   #  stop("Error: There are NAs in betas data. Please remove before proceeding!")
   #}else{
   annot.betas <- as.data.frame(manifest) %>% filter(rownames(.)%in%probe.vec) %>% 
@@ -518,7 +529,7 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
         
         temp.betas <- clus.betas[,ind.comp]
         
-        temp.covars <- as.data.frame(cbind(exposure[ind.comp], id[ind.comp]))
+        temp.covars <- data.frame(exposure[ind.comp], id[ind.comp])
         colnames(temp.covars) <- c("exposure",  "id")
         
         temp.long <- organize.island.repeated(temp.betas, temp.covars)
