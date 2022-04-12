@@ -21,8 +21,8 @@ load("data/betasEPIC.RData") ##Sample data. Please refer to our functions to con
 
 # Step 2: Get Illumina manifests for 450K and EPIC ------------------------
 ##make sure to download manifest from GitHub and place in the same folder as utils script
-manifest <- get_manifest("EPIC") #to pull EPIC manifest
-##manifest <- get_manifest("450K") #to pull 450K manifest
+manifest2 <- get_manifest("EPIC") #to pull EPIC manifest
+# manifest <- get_manifest("450K") #to pull 450K manifest
 #manifest <- get_manifest("MM285") #to pull manifest for mouse array (mm10)
 
 # Step 3: Clustering of CpGs ----------------------------------------------

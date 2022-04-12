@@ -1,15 +1,14 @@
-# # Data conversion: m-value <-> bet --------
 beta2Mval<- function(x){return(log2(x/(1-x)))} #function to convert beta values to mvalues
 Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta values to mvalues
 
 # Manifests function ----------------------------------------------
 get_manifest <- function(platform = c("450K","EPIC","MM285"),...){
   if(platform == "EPIC"){
-    annot <- read_csv("EPIC.hg19.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
+    annot <- read_csv("EPIC.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
     return(annot)
   }
   else if(platform == "450K"){
-    annot <- read_csv("HM450.h19.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
+    annot <- read_csv("HM450.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
     return(annot)
   }
   else if (platform == "MM285") {
@@ -37,7 +36,7 @@ update.clust.indicator <-
 
 ######################
 Dbp.merge <- function (ordr.vec, thresh.dist, bp.thresh.dist, location.vec, 
-          dist.type = "spearman") 
+                       dist.type = "spearman") 
 {
   stopifnot(is.element(tolower(dist.type), c("spearman", "pearson", 
                                              "euclid")))
@@ -144,7 +143,7 @@ calc.dist.clusters <-
 calc.dist.d.neighbor <-
   function(ordr.vec, d, dist.type = "spearman"){
     ## calucate the distances between vectors, and their d neighbor. 
-
+    
     ### initialize variables
     le <- dim(ordr.vec)[2]
     dist.vec.d <- rep(0, le - d)
@@ -166,7 +165,7 @@ calc.dist.d.neighbor <-
 ###################
 
 acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = NULL, 
-          max.dist = Inf, type = "single", dist.type = "spearman") 
+                      max.dist = Inf, type = "single", dist.type = "spearman") 
 {
   stopifnot(is.element(type, c("single", "complete", "average")), 
             is.element(tolower(dist.type), c("spearman", "pearson", 
@@ -278,8 +277,26 @@ acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = 
 # Find_cluster_list function --------------------------------------------------------
 find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size = 2, 
                                thresh.dist = 0.25, bp.thresh.dist = 999,
-                               max.dist = 1000, type = "average", dist.type = "spearman") {
- # if(all(!is.na(betas))==F) {
+                               max.dist = 1000, type = "average", dist.type = "spearman", 
+                               missingness_max_prop = 0.2) {
+  message(paste("Checking missingness, allowing maximum missingness proportion", missingness_max_prop))
+  missingness_prop <- apply(betas, 1, function(x) mean(is.na(x)))
+  inds_rm_probes <- which(missingness_prop > missingness_max_prop)
+  
+  if (length(setdiff(rownames(betas), manifest$Probe_ID))!=0) {
+    message(paste("Removed", length(setdiff(rownames(betas), manifest$Probe_ID)),
+                  "betas CpGs missing in the manifest due to a change in Illumina manufacturing process"))
+    betas <- betas %>% dplyr::filter(rownames(.)%in%manifest$Probe_ID)
+  }
+
+  if (length(inds_rm_probes) > 0){
+    message(paste("Removing", length(inds_rm_probes), 
+                  "methylation sites due to high missingness"))
+    betas <- betas[-inds_rm_probes,]
+    probe.vec <- probe.vec[-inds_rm_probes]
+  }
+  
+  # if(all(!is.na(betas))==F) {
   #  stop("Error: There are NAs in betas data. Please remove before proceeding!")
   #}else{
   annot.betas <- as.data.frame(manifest) %>% filter(rownames(.)%in%probe.vec) %>% 
@@ -371,7 +388,7 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
     dplyr::mutate(cluster_name = paste0("cluster_", seq(1:nrow(.))))
   
   return(list(annot.betas = annot.betas, clusters.list = clusters.all, cpg.clusters = cpg.clusters))
- # }
+  # }
 }
 
 # GEE.clusters function ---------------------------------------------------
@@ -399,149 +416,149 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
   require(geepack)
   if(!identical(colnames(betas), sample.id)) {
     stop("Error: colnames of betas must match sample IDs in pheno data and in the same order")
-    }
-    else{
-      
-  n.sites <- unlist(lapply(clusters.list, function(x) return(length(x))))
-  inds.rm <- which(n.sites < minimum.cluster.size)
-  
-  if (length(inds.rm) > 0) clusters.list <- clusters.list[-inds.rm]
-  
-  
-  n.mod <- length(clusters.list)
-  
-  effect <- rep(NA, n.mod)
-  se <- rep(NA, n.mod)
-  pvals <- rep(NA, n.mod)
-  sites <- rep("", n.mod)
-  n.sites <- rep(NA, n.mod)
-  n.samp <- rep(NA, n.mod)
-  
-  if (!is.null(covariates)){
-    
-    if (is.null(dim(covariates))) covariates <- as.matrix(covariates)
-    
-    if (is.null(colnames(covariates)))  colnames(covariates) <- rep("", ncol(covariates))
-    for (i in 1:ncol(covariates)){
-      if (colnames(covariates)[i] == "") colnames(covariates)[i] <- paste("covariate", i, sep = '_')
-      
-    }
-    
-    model.expression <- "model <- geeglm(Beta ~ exposure +"
-    for (j in 1:ncol(covariates)){
-      model.expression <- paste(model.expression, colnames(covariates)[j], "+")  }
-    
-    model.expression <- paste(model.expression, "as.factor(probeID), id = as.factor(id), data = temp.long, corstr = working.cor)")
-    
-    model.expr.1.site <- paste("model <- geeglm(clus.betas[ind.comp] ~ exposure[ind.comp] + ")  
-    for (j in 1:ncol(covariates)){
-      if (j < ncol(covariates)) model.expr.1.site <- paste(model.expr.1.site, colnames(covariates)[j], "+")
-      else    model.expr.1.site <- paste(model.expr.1.site, colnames(covariates)[j])}
-    
-    model.expr.1.site <- paste(model.expr.1.site, ", data = covariates[ind.comp,], id = as.factor(id)[ind.comp])")
-    covariates <- as.data.frame(covariates)
-    
-    
-    for (i in 1:n.mod){
-      clus.probes <- clusters.list[[i]]
-      clus.betas <- betas[clus.probes,]
-      
-      if (length(clus.probes) == 1){
-        
-        ind.comp <- which(complete.cases(cbind(clus.betas, exposure, covariates, id)))
-        eval(parse(text = model.expr.1.site))
-        
-        effect[i] <- summary(model)$coef["exposure",1]
-        se[i] <- summary(model)$coef["exposure",2]
-        pvals[i] <- summary(model)$coef["exposure",4]
-        n.sites[i] <- 1
-        sites[i] <- clus.probes
-        n.samp[i] <- length(ind.comp)
-        
-        
-      } else{
-        
-        ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure, covariates, id)))
-        
-        temp.betas <- clus.betas[,ind.comp]
-        
-        temp.covars <- as.data.frame(cbind(exposure[ind.comp], covariates[ind.comp,], id[ind.comp]))
-        colnames(temp.covars) <- c("exposure", colnames(covariates), "id")
-        
-        temp.long <- organize.island.repeated(temp.betas, temp.covars)
-        temp.long <- temp.long[complete.cases(temp.long),]
-        temp.long <- temp.long[order(temp.long$id),]
-        
-        eval(parse(text = model.expression))
-        
-        
-        effect[i] <- summary(model)$coef["exposure",1]
-        se[i] <- summary(model)$coef["exposure",2]
-        pvals[i] <- summary(model)$coef["exposure",4]
-        n.sites[i] <- length(clus.probes)
-        n.samp[i] <- length(ind.comp)
-        for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
-        substr(sites[i], 1, 1) <- ""
-        
-      }
-      
-    }
-    
-  } else{
-    
-    model.expression <- "model <- geeglm(Beta ~ exposure +"
-    model.expression <- paste(model.expression, "as.factor(probeID), id = as.factor(id), data = temp.long, corstr = working.cor)")
-    
-    model.expr.1.site <- paste("model <- geeglm(clus.betas[ind.comp] ~ exposure[ind.comp] ")      
-    model.expr.1.site <- paste(model.expr.1.site, ", data = covariates[ind.comp,], id = as.factor(id)[ind.comp])")
-    
-    for (i in 1:n.mod){
-      clus.probes <- clusters.list[[i]]
-      clus.betas <- betas[clus.probes,]
-      
-      
-      if (length(clus.probes) == 1){
-        
-        ind.comp <- which(complete.cases(cbind(clus.betas, exposure, id)))
-        eval(parse(text = model.expr.1.site))
-        
-        effect[i] <- summary(model)$coef["exposure",1]
-        se[i] <- summary(model)$coef["exposure",2]
-        pvals[i] <- summary(model)$coef["exposure",4]
-        n.sites[i] <- 1
-        sites[i] <- clus.probes
-        n.samp[i] <- length(ind.comp)
-        
-      } else{
-        
-        ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure,  id)))
-        
-        temp.betas <- clus.betas[,ind.comp]
-        
-        temp.covars <- as.data.frame(cbind(exposure[ind.comp], id[ind.comp]))
-        colnames(temp.covars) <- c("exposure",  "id")
-        
-        temp.long <- organize.island.repeated(temp.betas, temp.covars)
-        temp.long <- temp.long[complete.cases(temp.long),]
-        temp.long <- temp.long[order(temp.long$id),]
-        
-        eval(parse(text = model.expression))
-        
-        
-        effect[i] <- summary(model)$coef["exposure",1]
-        se[i] <- summary(model)$coef["exposure",2]
-        pvals[i] <- summary(model)$coef["exposure",4]
-        n.sites[i] <- length(clus.probes)
-        n.samp[i] <- length(ind.comp)
-        for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
-        substr(sites[i], 1, 1) <- ""
-        
-      }
-    }
-    
-    
   }
+  else{
+    
+    n.sites <- unlist(lapply(clusters.list, function(x) return(length(x))))
+    inds.rm <- which(n.sites < minimum.cluster.size)
+    
+    if (length(inds.rm) > 0) clusters.list <- clusters.list[-inds.rm]
+    
+    
+    n.mod <- length(clusters.list)
+    
+    effect <- rep(NA, n.mod)
+    se <- rep(NA, n.mod)
+    pvals <- rep(NA, n.mod)
+    sites <- rep("", n.mod)
+    n.sites <- rep(NA, n.mod)
+    n.samp <- rep(NA, n.mod)
+    
+    if (!is.null(covariates)){
+      
+      if (is.null(dim(covariates))) covariates <- as.matrix(covariates)
+      
+      if (is.null(colnames(covariates)))  colnames(covariates) <- rep("", ncol(covariates))
+      for (i in 1:ncol(covariates)){
+        if (colnames(covariates)[i] == "") colnames(covariates)[i] <- paste("covariate", i, sep = '_')
+        
+      }
+      
+      model.expression <- "model <- geeglm(Beta ~ exposure +"
+      for (j in 1:ncol(covariates)){
+        model.expression <- paste(model.expression, colnames(covariates)[j], "+")  }
+      
+      model.expression <- paste(model.expression, "as.factor(probeID), id = as.factor(id), data = temp.long, corstr = working.cor)")
+      
+      model.expr.1.site <- paste("model <- geeglm(clus.betas[ind.comp] ~ exposure[ind.comp] + ")  
+      for (j in 1:ncol(covariates)){
+        if (j < ncol(covariates)) model.expr.1.site <- paste(model.expr.1.site, colnames(covariates)[j], "+")
+        else    model.expr.1.site <- paste(model.expr.1.site, colnames(covariates)[j])}
+      
+      model.expr.1.site <- paste(model.expr.1.site, ", data = covariates[ind.comp,], id = as.factor(id)[ind.comp])")
+      covariates <- as.data.frame(covariates)
+      
+      
+      for (i in 1:n.mod){
+        clus.probes <- clusters.list[[i]]
+        clus.betas <- betas[clus.probes,]
+        
+        if (length(clus.probes) == 1){
+          
+          ind.comp <- which(complete.cases(cbind(clus.betas, exposure, covariates, id)))
+          eval(parse(text = model.expr.1.site))
+          
+          effect[i] <- summary(model)$coef["exposure",1]
+          se[i] <- summary(model)$coef["exposure",2]
+          pvals[i] <- summary(model)$coef["exposure",4]
+          n.sites[i] <- 1
+          sites[i] <- clus.probes
+          n.samp[i] <- length(ind.comp)
+          
+          
+        } else{
+          
+          ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure, covariates, id)))
+          
+          temp.betas <- clus.betas[,ind.comp]
+          
+          temp.covars <- as.data.frame(cbind(exposure[ind.comp], covariates[ind.comp,], id[ind.comp]))
+          colnames(temp.covars) <- c("exposure", colnames(covariates), "id")
+          
+          temp.long <- organize.island.repeated(temp.betas, temp.covars)
+          temp.long <- temp.long[complete.cases(temp.long),]
+          temp.long <- temp.long[order(temp.long$id),]
+          
+          eval(parse(text = model.expression))
+          
+          
+          effect[i] <- summary(model)$coef["exposure",1]
+          se[i] <- summary(model)$coef["exposure",2]
+          pvals[i] <- summary(model)$coef["exposure",4]
+          n.sites[i] <- length(clus.probes)
+          n.samp[i] <- length(ind.comp)
+          for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
+          substr(sites[i], 1, 1) <- ""
+          
+        }
+        
+      }
+      
+    } else{
+      
+      model.expression <- "model <- geeglm(Beta ~ exposure +"
+      model.expression <- paste(model.expression, "as.factor(probeID), id = as.factor(id), data = temp.long, corstr = working.cor)")
+      
+      model.expr.1.site <- paste("model <- geeglm(clus.betas[ind.comp] ~ exposure[ind.comp] ")      
+      model.expr.1.site <- paste(model.expr.1.site, ", data = covariates[ind.comp,], id = as.factor(id)[ind.comp])")
+      
+      for (i in 1:n.mod){
+        clus.probes <- clusters.list[[i]]
+        clus.betas <- betas[clus.probes,]
+        
+        
+        if (length(clus.probes) == 1){
+          
+          ind.comp <- which(complete.cases(cbind(clus.betas, exposure, id)))
+          eval(parse(text = model.expr.1.site))
+          
+          effect[i] <- summary(model)$coef["exposure",1]
+          se[i] <- summary(model)$coef["exposure",2]
+          pvals[i] <- summary(model)$coef["exposure",4]
+          n.sites[i] <- 1
+          sites[i] <- clus.probes
+          n.samp[i] <- length(ind.comp)
+          
+        } else{
+          
+          ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure,  id)))
+          
+          temp.betas <- clus.betas[,ind.comp]
+          
+          temp.covars <- data.frame(exposure[ind.comp], id[ind.comp])
+          colnames(temp.covars) <- c("exposure",  "id")
+          
+          temp.long <- organize.island.repeated(temp.betas, temp.covars)
+          temp.long <- temp.long[complete.cases(temp.long),]
+          temp.long <- temp.long[order(temp.long$id),]
+          
+          eval(parse(text = model.expression))
+          
+          
+          effect[i] <- summary(model)$coef["exposure",1]
+          se[i] <- summary(model)$coef["exposure",2]
+          pvals[i] <- summary(model)$coef["exposure",4]
+          n.sites[i] <- length(clus.probes)
+          n.samp[i] <- length(ind.comp)
+          for (c in 1:length(clus.probes)) sites[i] <- paste(sites[i], clus.probes[c], sep = ";")
+          substr(sites[i], 1, 1) <- ""
+          
+        }
+      }
+      
+      
     }
+  }
   result <- data.frame(exposure_effect_size = effect, exposure_effect_se = se, exposure_pvalue= pvals, n_sites_in_cluster = n.sites, n_samples = n.samp, cluster_sites =sites)  
   result <- result[order(result$exposure_pvalue),]
   
@@ -602,5 +619,3 @@ annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
   
   return(bm)
 }
-
-
