@@ -282,6 +282,7 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
   message(paste("Checking missingness, allowing maximum missingness proportion", missingness_max_prop))
   missingness_prop <- apply(betas, 1, function(x) mean(is.na(x)))
   inds_rm_probes <- which(missingness_prop > missingness_max_prop)
+<<<<<<< HEAD
   
   if (length(setdiff(rownames(betas), manifest$Probe_ID))!=0) {
     message(paste("Removed", length(setdiff(rownames(betas), manifest$Probe_ID)),
@@ -289,6 +290,8 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
     betas <- betas %>% dplyr::filter(rownames(.)%in%manifest$Probe_ID)
   }
 
+=======
+>>>>>>> 7ad15991288bbc31aa64512b8070dbc005ee9437
   if (length(inds_rm_probes) > 0){
     message(paste("Removing", length(inds_rm_probes), 
                   "methylation sites due to high missingness"))
@@ -450,6 +453,7 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
       
       model.expression <- paste(model.expression, "as.factor(probeID), id = as.factor(id), data = temp.long, corstr = working.cor)")
       
+<<<<<<< HEAD
       model.expr.1.site <- paste("model <- geeglm(clus.betas[ind.comp] ~ exposure[ind.comp] + ")  
       for (j in 1:ncol(covariates)){
         if (j < ncol(covariates)) model.expr.1.site <- paste(model.expr.1.site, colnames(covariates)[j], "+")
@@ -462,6 +466,32 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
       for (i in 1:n.mod){
         clus.probes <- clusters.list[[i]]
         clus.betas <- betas[clus.probes,]
+=======
+      if (length(clus.probes) == 1){
+        
+        ind.comp <- which(complete.cases(cbind(clus.betas, exposure, id)))
+        eval(parse(text = model.expr.1.site))
+        
+        effect[i] <- summary(model)$coef["exposure",1]
+        se[i] <- summary(model)$coef["exposure",2]
+        pvals[i] <- summary(model)$coef["exposure",4]
+        n.sites[i] <- 1
+        sites[i] <- clus.probes
+        n.samp[i] <- length(ind.comp)
+        
+      } else{
+        
+        ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure,  id)))
+        
+        temp.betas <- clus.betas[,ind.comp]
+        
+        temp.covars <- data.frame(exposure[ind.comp], id[ind.comp])
+        colnames(temp.covars) <- c("exposure",  "id")
+        
+        temp.long <- organize.island.repeated(temp.betas, temp.covars)
+        temp.long <- temp.long[complete.cases(temp.long),]
+        temp.long <- temp.long[order(temp.long$id),]
+>>>>>>> 7ad15991288bbc31aa64512b8070dbc005ee9437
         
         if (length(clus.probes) == 1){
           
