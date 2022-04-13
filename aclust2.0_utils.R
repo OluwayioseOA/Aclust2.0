@@ -173,6 +173,11 @@ acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = 
                                              "euclid")))
   if (!is.null(max.dist) & !all(!is.na(location.vec))) 
     stop("missing location values")
+  
+  # defining two functions that are used only in this function
+  first <- function(x){x[1]}
+  last <- function(x){x[length(x)]}
+  
   le <- dim(ordr.vec)[2]
   dist.clust <- rep(0, le - 1)
   if (is.null(which.clust)) {
@@ -271,7 +276,9 @@ acluster <- function (ordr.vec, thresh.dist, which.clust = NULL, location.vec = 
 }
 
 # Find_cluster_list function --------------------------------------------------------
-find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size = 2) {
+find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size = 2, 
+                               thresh.dist = 0.25, bp.thresh.dist = 999,
+                               max.dist = 1000, type = "average", dist.type = "spearman") {
   if(all(!is.na(betas))==F) {
     stop("Error: There are NAs in betas data. Please remove before proceeding!")
   }else{
@@ -312,8 +319,18 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
     locations.temp <- chrom.list[[2]][[i]]
     betas.temp <- betas.temp[which(!is.na(locations.temp$Coordinate)), ]
     locations.temp <- locations.temp[!is.na(Coordinate)]
-    which.clust <- Dbp.merge(t(betas.temp), thresh.dist = 0.25, bp.thresh.dist = 999, as.numeric(locations.temp$Coordinate), dist.type = "spearman")
-    clust.vec <- acluster(t(betas.temp), thresh.dist = 0.25, which.clust = which.clust, location.vec = chrom.list$sites.locations.by.chrom[[i]]$Coordinate, max.dist = 1000, type = "average", dist.type = "spearman")
+    which.clust <- Dbp.merge(t(betas.temp), 
+                             thresh.dist = thresh.dist, 
+                             bp.thresh.dist = bp.thresh.dist, 
+                             as.numeric(locations.temp$Coordinate), 
+                             dist.type = dist.type)
+    clust.vec <- acluster(t(betas.temp), 
+                          thresh.dist = thresh.dist, 
+                          which.clust = which.clust, 
+                          location.vec = chrom.list$sites.locations.by.chrom[[i]]$Coordinate, 
+                          max.dist = max.dist, 
+                          type = type, 
+                          dist.type = dist.type)
     clusters.by.chrom[[i]] <- lapply(clust.vec, function(x) return(locations.temp$IlmnID[which(clust.vec == x)]))
     clusters.by.chrom[[i]] <- clusters.by.chrom[[i]][which(!duplicated(clusters.by.chrom[[i]]))]
     if (i == 1)
