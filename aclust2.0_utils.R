@@ -1,7 +1,9 @@
+# # Data conversion: m-value <-> bet --------
 beta2Mval<- function(x){return(log2(x/(1-x)))} #function to convert beta values to mvalues
 Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta values to mvalues
 
 # Manifests function ----------------------------------------------
+
 get_manifest <- function(platform = c("450K","EPIC","MM285"),...){
   if(platform == "EPIC"){
     annot <- read_csv("EPIC.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
@@ -282,35 +284,46 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
   message(paste("Checking missingness, allowing maximum missingness proportion", missingness_max_prop))
   missingness_prop <- apply(betas, 1, function(x) mean(is.na(x)))
   inds_rm_probes <- which(missingness_prop > missingness_max_prop)
-
-  if (length(setdiff(rownames(betas), manifest$Probe_ID))!=0) {
-    message(paste("Removed", length(setdiff(rownames(betas), manifest$Probe_ID)),
-                  "betas CpGs missing in the manifest due to a change in Illumina manufacturing process"))
-    betas <- betas %>% dplyr::filter(rownames(.)%in%manifest$Probe_ID)
-    
-    if (length(inds_rm_probes) > 0){
-      message(paste("Removing", length(inds_rm_probes), 
-                    "methylation sites due to high missingness"))
-      betas <- betas[-inds_rm_probes,]
-      probe.vec <- probe.vec[-inds_rm_probes]
-    }
-    
-  }
-  # if (length(inds_rm_probes) > 0){
-  #   message(paste("Removing", length(inds_rm_probes), 
-  #                 "methylation sites due to high missingness"))
-  #   betas <- betas[-inds_rm_probes,]
-  #   probe.vec <- probe.vec[-inds_rm_probes]
-  # }
   
-  # if(all(!is.na(betas))==F) {
-  #  stop("Error: There are NAs in betas data. Please remove before proceeding!")
-  #}else{
+  if (length(inds_rm_probes) > 0){
+    message(paste("Removing", length(inds_rm_probes), 
+                  "methylation sites due to high missingness"))
+    betas <- betas[-inds_rm_probes,]
+    probe.vec <- probe.vec[-inds_rm_probes]
+  } else{
+    message("Not removing any sites due to missingness (yay!)")
+  }
+  
+  if (!all(rownames(betas) %in% rownames(manifest))){
+    inds_rm_probes <- which(!is.element(rownames(betas), rownames(manifest)) )
+    message(paste("Removing", length(inds_rm_probes), 
+                  "sites not available in the manifest file"))
+    betas <- betas[-inds_rm_probes,]
+    probe.vec <- probe.vec[-inds_rm_probes]        
+  }
+  
   annot.betas <- as.data.frame(manifest) %>% filter(rownames(.)%in%probe.vec) %>% 
     dplyr::select(Probe_ID, seqnames, probeTarget) %>%
     setNames(c("IlmnID", "CHR", "Coordinate")) %>% 
     mutate(IlmnID = as.character(IlmnID), CHR = as.character(CHR), Coordinate = as.numeric(Coordinate)) %>% 
     filter(!duplicated(IlmnID)) %>% data.table(., key = c("CHR","Coordinate"))
+  
+  # align annotation and betas:
+  betas <- betas[annot.betas$IlmnID,]
+  
+  # check if there are any chromosomes with a single site, if so: remove
+  n_probes_by_chr <- table(annot.betas$CHR)
+  chr_one_site <- names(n_probes_by_chr)[n_probes_by_chr == 1]
+  
+  if (length(chr_one_site > 0)){
+    message(paste("Removing", length(chr_one_site), 
+                  "sites, that are sinlge from their chromosomes"))
+    inds_rm_probes <- which(annot.betas$CHR %in% chr_one_site)
+    betas <- betas[-inds_rm_probes,]
+    probe.vec <- probe.vec[-inds_rm_probes]
+    annot.betas <- annot.betas[-inds_rm_probes, ]
+  }
+  
   
   CHR = annot.betas$CHR
   Coordinate = annot.betas$Coordinate
@@ -322,17 +335,12 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
     return.chroms = paste("chr",c(1:19, "X", "Y", "M"),sep="")
   }
   chroms <- intersect(chroms, return.chroms)
-  chroms <- chroms[order(as.numeric(as.character(chroms)))] 
   betas.by.chrom <- vector(mode = "list", length = length(chroms))
   sites.by.chrom <- vector(mode = "list", length = length(chroms))
   names(betas.by.chrom) <- names(sites.by.chrom) <- chroms
   for (i in 1:length(chroms)) {
-    cpg.chrom <- as.character(annot.betas[CHR == chroms[i]]$IlmnID)
+    cpg.chrom <- as.character(annot.betas[annot.betas$CHR == chroms[i]]$IlmnID)
     betas.by.chrom[[i]] <- as.matrix(betas[cpg.chrom, ])
-    if (ncol(betas.by.chrom[[i]]) == 1) {
-      betas.by.chrom[[i]] <- t(betas.by.chrom[[i]])
-      rownames(betas.by.chrom[[i]]) <- cpg.chrom
-    }
     sites.by.chrom[[i]] <- annot.betas[CHR == chroms[i],
                                        c("IlmnID", "Coordinate"), with = F]
   }
@@ -397,7 +405,6 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
   return(list(annot.betas = annot.betas, clusters.list = clusters.all, cpg.clusters = cpg.clusters))
   # }
 }
-
 # GEE.clusters function ---------------------------------------------------
 organize.island.repeated <-
   function(X, covar.mat){
@@ -469,30 +476,6 @@ GEE.clusters <- function(betas, clusters.list, exposure, id, covariates = NULL, 
       for (i in 1:n.mod){
         clus.probes <- clusters.list[[i]]
         clus.betas <- betas[clus.probes,]
-      if (length(clus.probes) == 1){
-        
-        ind.comp <- which(complete.cases(cbind(clus.betas, exposure, id)))
-        eval(parse(text = model.expr.1.site))
-        
-        effect[i] <- summary(model)$coef["exposure",1]
-        se[i] <- summary(model)$coef["exposure",2]
-        pvals[i] <- summary(model)$coef["exposure",4]
-        n.sites[i] <- 1
-        sites[i] <- clus.probes
-        n.samp[i] <- length(ind.comp)
-        
-      } else{
-        
-        ind.comp <- which(complete.cases(cbind(t(clus.betas), exposure,  id)))
-        
-        temp.betas <- clus.betas[,ind.comp]
-        
-        temp.covars <- data.frame(exposure[ind.comp], id[ind.comp])
-        colnames(temp.covars) <- c("exposure",  "id")
-        
-        temp.long <- organize.island.repeated(temp.betas, temp.covars)
-        temp.long <- temp.long[complete.cases(temp.long),]
-        temp.long <- temp.long[order(temp.long$id),]
         
         if (length(clus.probes) == 1){
           
