@@ -611,7 +611,7 @@ chrom_annot <- function(x){
 
 annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
   if(model=="hsa"){
-    ensembl = useMart(biomart="ENSEMBL_MART_ENSEMBL", host="https://grch37.ensembl.org", 
+    ensembl = useMart(biomart="ENSEMBL_MART_ENSEMBL", host="https://www.ensembl.org", 
                       path="/biomart/martservice", dataset="hsapiens_gene_ensembl")
   }else{
     
