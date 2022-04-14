@@ -21,13 +21,16 @@ load("data/betasEPIC.RData") ##Sample data. Please refer to our functions to con
 
 # Step 2: Get Illumina manifests for 450K and EPIC ------------------------
 ##make sure to download manifest from GitHub and place in the same folder as utils script
-manifest2 <- get_manifest("EPIC") #to pull EPIC manifest
-# manifest <- get_manifest("450K") #to pull 450K manifest
+manifest <- get_manifest("EPIC") #to pull EPIC manifest
+#manifest <- get_manifest("450K") #to pull 450K manifest
 #manifest <- get_manifest("MM285") #to pull manifest for mouse array (mm10)
 
 # Step 3: Clustering of CpGs ----------------------------------------------
 ##This step creates a list that accommodates three objects 
-list.out <- find_cluster_list(probe.vec = rownames(betas), betas = betas, manifest = manifest, minimum.cluster.size = 2)
+list.out <- find_cluster_list(probe.vec = rownames(betas), 
+                              betas = betas, 
+                              manifest = manifest, 
+                              minimum.cluster.size = 2)
 # list.out <- find_cluster_list(probe.vec = rownames(betasMM285), 
 #                                betas = betasMM285, 
 #                                manifest = manifest, 
@@ -54,8 +57,10 @@ identical(colnames(betas), sample.id) ##must be in the same order
 #betas <- betas[, sample.id] ##to reorder betas by sample.id
 
 ###Adjusting for covariates
-cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.list, exposure = exposure,
-                                 covariates= covariates, id = colnames(betas), working.cor = "ex", sample.id = sample.id) %>% 
+cluster.gee <- GEE.clusters(betas = betas, clusters.list = list.out$clusters.list, 
+                            exposure = exposure,covariates= covariates, 
+                            id = colnames(betas), working.cor = "ex", 
+                            sample.id = sample.id) %>% 
   mutate(exposure_padjusted = p.adjust(exposure_pvalue, "BH")) ##adjusting for false positives
 
 ###No covariate adjustment 
@@ -78,7 +83,9 @@ annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model
 #For cluster outputs from gee model in step 4
 annot.betas <- list.out$annot.betas
 clus <- cluster.gee ## (from step 4)
-annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "hsa") 
-##annotated.genes <- annot.clus.gene(annot.betas = annot.betas, clus = clus, model = "mm")#mouse annotation
+annotated.genes <- annot.clus.gene(annot.betas = annot.betas, 
+                                   clus = clus, model = "hsa") 
+# annotated.genes <- annot.clus.gene(annot.betas = annot.betas, 
+#                                    clus = clus, model = "mm")#mouse annotation
 
 
