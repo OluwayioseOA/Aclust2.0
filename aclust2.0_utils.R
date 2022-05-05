@@ -612,12 +612,12 @@ chrom_annot <- function(x){
 annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
   if(model=="hsa"){
     ensembl = useMart(biomart="ENSEMBL_MART_ENSEMBL", host="https://www.ensembl.org", 
-                      path="/biomart/martservice", dataset="hsapiens_gene_ensembl")
+                      path="/biomart/martservice", dataset="hsapiens_gene_ensembl", port = 443)
   }else{
     
     ensembl = useMart(biomart="ENSEMBL_MART_ENSEMBL", 
                       host="https://www.ensembl.org", path="/biomart/martservice", 
-                      dataset="mmusculus_gene_ensembl")
+                      dataset="mmusculus_gene_ensembl", port = 443)
     
   }
   anno <- t(sapply(1:nrow(clus),chrom_annot)) %>% data.frame(.) %>% 
@@ -629,7 +629,8 @@ annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
                                                                       select=c("all"),ignore.strand=TRUE) %>% data.frame(.) 
   bm <- getBM(attributes=c("ensembl_exon_id","external_gene_name"),
               filters='ensembl_exon_id', values=anno$feature, mart=ensembl) %>% 
-    rename(ensembl_exon_id = "feature") %>% right_join(anno) %>% filter(!duplicated(c(cluster_name)))
+    rename(ensembl_exon_id = "feature") %>% right_join(anno) %>% 
+    filter(!duplicated(cluster_name) & width>1)
   
   return(bm)
 }
