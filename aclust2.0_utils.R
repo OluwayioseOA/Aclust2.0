@@ -1,3 +1,17 @@
+# Import libraries -------------------------------------------------------
+library(dplyr)
+library(readr)
+library(readxl)
+require(geepack)
+require(data.table)
+library("biomaRt") 
+library("ChIPpeakAnno")
+library("GenomicRanges")
+library(tibble)
+library(tidyverse)
+library(stringr)
+library(tibble)
+
 # # Data conversion: m-value <-> bet --------
 beta2Mval<- function(x){return(log2(x/(1-x)))} #function to convert beta values to mvalues
 Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta values to mvalues
@@ -629,7 +643,7 @@ annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
                                                                       select=c("all"),ignore.strand=TRUE) %>% data.frame(.) 
   bm <- getBM(attributes=c("ensembl_exon_id","external_gene_name"),
               filters='ensembl_exon_id', values=anno$feature, mart=ensembl) %>% 
-    rename(ensembl_exon_id = "feature") %>% right_join(anno) %>% 
+    rename(feature = ensembl_exon_id) %>% right_join(anno) %>% 
     filter(!duplicated(cluster_name) & width>1)
   
   return(bm)
