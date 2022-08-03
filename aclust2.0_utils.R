@@ -643,8 +643,8 @@ annot.clus.gene <- function(annot.betas, clus, model = c("mm", "hsa")){
                                                                       select=c("all"),ignore.strand=TRUE) %>% data.frame(.) 
   bm <- getBM(attributes=c("ensembl_exon_id","external_gene_name"),
               filters='ensembl_exon_id', values=anno$feature, mart=ensembl) %>% 
-    rename(feature = ensembl_exon_id) %>% right_join(anno) %>% 
-    filter(!duplicated(cluster_name) & width>1)
+    dplyr::rename(feature = ensembl_exon_id) %>% right_join(anno) %>% 
+    dplyr::filter(!duplicated(cluster_name) & width>1)
   
   return(bm)
 }
