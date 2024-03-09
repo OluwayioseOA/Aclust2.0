@@ -19,9 +19,11 @@ load("data/betasEPIC.RData") ##Sample data. Please refer to our functions to con
 #load("data/betasMM285.RData") ##this sample data contains NAs
 #betasMM285 <- na.omit(betasMM285) 
 
-# Step 2: Get Illumina manifests for 450K and EPIC ------------------------
+# Step 2: Get Illumina manifests for MM285, 450K, EPICv1, EPICv2 ---------
+
 ##make sure to download manifest from GitHub and place in the same folder as utils script
-manifest <- get_manifest("EPIC") #to pull EPIC manifest
+manifest <- get_manifest("EPICv2") #to pull EPICv2 manifest 
+#manifest <- get_manifest("EPICv1") #to pull EPICv1 manifest
 #manifest <- get_manifest("450K") #to pull 450K manifest
 #manifest <- get_manifest("MM285") #to pull manifest for mouse array (mm10)
 
@@ -35,7 +37,6 @@ list.out <- find_cluster_list(probe.vec = rownames(betas),
 #                                betas = betasMM285, 
 #                                manifest = manifest, 
 #                                minimum.cluster.size = 2)
-
 
 clusters.list <- list.out$clusters.list #required for optional GEE model in step 4
 annot.betas <- list.out$annot.betas #required chromosomal annotation in step 5

@@ -18,23 +18,29 @@ Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta v
 
 ## Manifests function ----------------------------------------------
 
-get_manifest <- function(platform = c("450K","EPIC","MM285"),...){
-  if(platform == "EPIC"){
-    annot <- read_csv("EPIC.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
+get_manifest <- function(platform = c("450K","EPICv1","EPICv2", "MM285"),...){
+  if(platform == "EPICv1"){
+    annot <- data.table::fread("EPIC.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
     return(annot)
-  }
+    
+  }else if(platform == "EPICv2"){
+    annot <- data.table::fread("EPIC_v2.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% 
+      column_to_rownames(., var = "id")
+    return(annot)
+  } 
   else if(platform == "450K"){
-    annot <- read_csv("HM450.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
+    annot <- data.table::fread("HM450.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
     return(annot)
   }
   else if (platform == "MM285") {
-    annot <- read_csv("MM285.mm10.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
+    annot <- data.table::fread("MM285.mm10.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
     return(annot)
   }
   else{
     stop("You need to specify either EPIC or 450K to run")
   }
 }
+
 # Dbp.merge function -----------------------------------------------------
 ######################
 update.clust.indicator <-
