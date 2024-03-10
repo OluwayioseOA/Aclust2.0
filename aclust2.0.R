@@ -20,7 +20,6 @@ load("data/betasEPIC.RData") ##Sample data. Please refer to our functions to con
 #betasMM285 <- na.omit(betasMM285) 
 
 # Step 2: Get Illumina manifests for MM285, 450K, EPICv1, EPICv2 ---------
-
 ##make sure to download manifest from GitHub and place in the same folder as utils script
 manifest <- get_manifest("EPICv2") #to pull EPICv2 manifest 
 #manifest <- get_manifest("EPICv1") #to pull EPICv1 manifest
