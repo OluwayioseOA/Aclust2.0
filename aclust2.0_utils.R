@@ -17,6 +17,7 @@ beta2Mval<- function(x){return(log2(x/(1-x)))} #function to convert beta values 
 Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta values to mvalues
 
 ## Manifests function ----------------------------------------------
+
 get_manifest <- function(platform = c("450K","EPICv1","EPICv2", "MM285"),...){
   if(platform == "EPICv1"){
     annot <- data.table::fread("EPIC.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% column_to_rownames(., var = "id")
