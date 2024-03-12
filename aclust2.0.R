@@ -9,7 +9,7 @@ library("GenomicRanges")
 library(tibble)
 
 # Step 1:Call functions & import betas -------------------------------------
-##Download the code from Github into a named directory and set as working directory
+##Download the code from Github into a named directory and set as working directory.
 ##setwd()
 source("aclust2.0_utils.R")
 ##Note: Remove NAs from betas data before proceeding!!

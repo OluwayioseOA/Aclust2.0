@@ -2,3 +2,4 @@
 EPIC.hg38.manifest.csv filter=lfs diff=lfs merge=lfs -text
 HM450.hg38.manifest.csv filter=lfs diff=lfs merge=lfs -text
 EPIC_v2.hg38.manifest.csv filter=lfs diff=lfs merge=lfs -text
+EPICv2.hg38.manifest.csv filter=lfs diff=lfs merge=lfs -text
