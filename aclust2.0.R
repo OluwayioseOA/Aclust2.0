@@ -12,7 +12,6 @@ library(tibble)
 ##Download the code from Github into a named directory and set as working directory
 ##setwd()
 source("aclust2.0_utils.R")
-
 ##Note: Remove NAs from betas data before proceeding!!
 load("data/betasEPIC.RData") ##Sample data. Please refer to our functions to convert to mvalue if you need to covert to m-value
 #load("data/betas450K.RData")

@@ -4,9 +4,9 @@ library(readr)
 library(readxl)
 require(geepack)
 require(data.table)
-library("biomaRt") 
-library("ChIPpeakAnno")
-library("GenomicRanges")
+library(biomaRt) 
+library(ChIPpeakAnno)
+library(GenomicRanges)
 library(tibble)
 library(tidyverse)
 library(stringr)
@@ -24,7 +24,7 @@ get_manifest <- function(platform = c("450K","EPICv1","EPICv2", "MM285"),...){
     return(annot)
     
   }else if(platform == "EPICv2"){
-    annot <- data.table::fread("EPIC_v2.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% 
+    annot <- data.table::fread("EPICv2.hg38.manifest.csv") %>% mutate(id = Probe_ID) %>% 
       column_to_rownames(., var = "id")
     return(annot)
   } 
