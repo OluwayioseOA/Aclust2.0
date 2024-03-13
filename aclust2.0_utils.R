@@ -13,7 +13,6 @@ library(stringr)
 library(tibble)
 
 # # Data conversion: m-value <-> bet --------
-
 beta2Mval<- function(x){return(log2(x/(1-x)))} #function to convert beta values to mvalues.
 Mval2beta <- function(x){return(2^(x) / (2^x + 1))} # function to convert beta values to mvalues
 
