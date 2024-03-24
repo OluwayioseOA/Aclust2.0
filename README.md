@@ -1,4 +1,4 @@
-# Alcust2.0 instructions
+# Aclust2.0 instructions
 
 Step 1. Users are required to download a zipped folder from Github, which contains a sample data directory, assay-specific manifests and two R scripts- “aclust2.0.R”, and “aclust2.0_utils.R”. The data folder accommodates test phenotype and betas data for EPIC and MM285 arrays. For the betas data, the rows and columns are CpGs and samples IDs, respectively, with each row of the phenotype data representing an individual sample. “aclust2.0.R” script provides all the necessary guidelines for the five steps required to run the pipeline. All the pipeline functions are housed in “aclust2.0_utils.R”, such that calling this with a “source” function automatically loads all the functions into the R environment. These functions are executed in steps 2-5 below: 
 
