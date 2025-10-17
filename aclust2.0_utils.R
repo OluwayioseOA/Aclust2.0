@@ -352,7 +352,7 @@ find_cluster_list <- function (probe.vec, betas, manifest, minimum.cluster.size 
   if(length(unique(CHR))==24){
     return.chroms = paste("chr",c(1:22, "X", "Y"),sep="")
   } else{
-    return.chroms = paste("chr",c(1:19, "X", "Y", "M"),sep="")
+    return.chroms = paste("chr",c(1:22, "X", "Y", "M"),sep="")
   }
   chroms <- intersect(chroms, return.chroms)
   betas.by.chrom <- vector(mode = "list", length = length(chroms))
